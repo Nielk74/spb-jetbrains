@@ -1,0 +1,76 @@
+<idea-plugin>
+    <id>com.spb.spb-jetbrains</id>
+    <name>SPB Build</name>
+    <version>1.0.0</version>
+    <vendor email="support@example.com" url="https://example.com">SPB</vendor>
+
+    <description><![CDATA[
+    Provides custom MSBuild integration with Visual Studio telemetry session variable support.
+    <ul>
+        <li>Build projects/solutions with VSTelemetrySession environment variable</li>
+        <li>Right-click context menu integration</li>
+        <li>Automatic update checking for external tools</li>
+    </ul>
+    ]]></description>
+
+    <change-notes><![CDATA[
+    <ul>
+        <li>1.0.0 - Initial release</li>
+    </ul>
+    ]]></change-notes>
+
+    <idea-version since-build="242" until-build="251.*"/>
+
+    <depends>com.intellij.modules.rider</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Settings -->
+        <applicationConfigurable
+                parentId="tools"
+                instance="com.spb.settings.SpbSettingsConfigurable"
+                id="com.spb.settings.SpbSettingsConfigurable"
+                displayName="SPB Build"/>
+
+        <applicationService
+                serviceInterface="com.spb.settings.SpbSettings"
+                serviceImplementation="com.spb.settings.SpbSettings"/>
+
+        <!-- Version check service -->
+        <applicationService
+                serviceInterface="com.spb.services.VersionCheckService"
+                serviceImplementation="com.spb.services.VersionCheckService"/>
+
+        <!-- Startup activity for version check -->
+        <postStartupActivity implementation="com.spb.services.SpbStartupActivity"/>
+
+        <!-- Notification group -->
+        <notificationGroup id="SPB Build Notifications"
+                           displayType="BALLOON"
+                           toolWindowId="Build"/>
+    </extensions>
+
+    <actions>
+        <!-- Project context menu -->
+        <action id="com.spb.actions.SpbBuildProjectAction"
+                class="com.spb.actions.SpbBuildProjectAction"
+                text="SPB Build Project"
+                description="Build project with VSTelemetrySession variable">
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="BuildMenu"/>
+        </action>
+
+        <!-- Solution context menu -->
+        <action id="com.spb.actions.SpbBuildSolutionAction"
+                class="com.spb.actions.SpbBuildSolutionAction"
+                text="SPB Build Solution"
+                description="Build solution with VSTelemetrySession variable">
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="com.spb.actions.SpbBuildProjectAction"/>
+        </action>
+
+        <!-- Build menu integration -->
+        <group id="com.spb.actions.SpbBuildMenu" text="SPB Build" popup="true">
+            <reference ref="com.spb.actions.SpbBuildProjectAction"/>
+            <reference ref="com.spb.actions.SpbBuildSolutionAction"/>
+            <add-to-group group-id="BuildMenu" anchor="last"/>
+        </group>
+    </actions>
+</idea-plugin>
