@@ -1,7 +1,7 @@
 <idea-plugin>
     <id>com.spb.spb-jetbrains</id>
     <name>SPB Build</name>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
     <vendor email="support@example.com" url="https://example.com">SPB</vendor>
 
     <description><![CDATA[
@@ -15,11 +15,12 @@
 
     <change-notes><![CDATA[
     <ul>
+        <li>1.1.0 - Use VSTEL_CurrentSolutionBuildID env var, CLI update via HTTP Last-Modified, support IDE 252.*</li>
         <li>1.0.0 - Initial release</li>
     </ul>
     ]]></change-notes>
 
-    <idea-version since-build="242" until-build="251.*"/>
+    <idea-version since-build="242" until-build="252.*"/>
 
     <depends>com.intellij.modules.rider</depends>
 

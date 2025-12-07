@@ -14,29 +14,30 @@ class SpbSettingsConfigurable : Configurable {
 
     private var mainPanel: JPanel? = null
     private var vsTelemetrySessionField: JBTextField? = null
-    private var downloadPathField: TextFieldWithBrowseButton? = null
-    private var updateCheckUrlField: JBTextField? = null
+    private var cliUpdateUrlField: JBTextField? = null
+    private var cliDownloadPathField: TextFieldWithBrowseButton? = null
     private var enableAutoUpdateCheckBox: JBCheckBox? = null
 
     override fun getDisplayName(): String = "SPB Build"
 
     override fun createComponent(): JComponent {
         vsTelemetrySessionField = JBTextField()
-        downloadPathField = TextFieldWithBrowseButton().apply {
+        cliUpdateUrlField = JBTextField()
+        cliDownloadPathField = TextFieldWithBrowseButton().apply {
             addBrowseFolderListener(
                 "Select Download Path",
-                "Select the directory where SPB tools will be downloaded",
+                "Select the file path where tracker.exe will be downloaded",
                 null,
-                FileChooserDescriptorFactory.createSingleFolderDescriptor()
+                FileChooserDescriptorFactory.createSingleFileDescriptor()
             )
         }
-        updateCheckUrlField = JBTextField()
         enableAutoUpdateCheckBox = JBCheckBox("Enable automatic update checks (once per day)")
 
         mainPanel = FormBuilder.createFormBuilder()
-            .addLabeledComponent(JBLabel("VSTelemetrySession value:"), vsTelemetrySessionField!!, 1, false)
-            .addLabeledComponent(JBLabel("Download path:"), downloadPathField!!, 1, false)
-            .addLabeledComponent(JBLabel("Update check URL:"), updateCheckUrlField!!, 1, false)
+            .addLabeledComponent(JBLabel("VSTEL_CurrentSolutionBuildID value:"), vsTelemetrySessionField!!, 1, false)
+            .addSeparator()
+            .addLabeledComponent(JBLabel("CLI update URL:"), cliUpdateUrlField!!, 1, false)
+            .addLabeledComponent(JBLabel("CLI download path:"), cliDownloadPathField!!, 1, false)
             .addComponent(enableAutoUpdateCheckBox!!, 1)
             .addComponentFillVertically(JPanel(), 0)
             .panel
@@ -47,32 +48,32 @@ class SpbSettingsConfigurable : Configurable {
     override fun isModified(): Boolean {
         val settings = SpbSettings.getInstance()
         return vsTelemetrySessionField?.text != settings.vsTelemetrySessionValue ||
-                downloadPathField?.text != settings.downloadPath ||
-                updateCheckUrlField?.text != settings.updateCheckUrl ||
+                cliUpdateUrlField?.text != settings.cliUpdateUrl ||
+                cliDownloadPathField?.text != settings.cliDownloadPath ||
                 enableAutoUpdateCheckBox?.isSelected != settings.enableAutoUpdateCheck
     }
 
     override fun apply() {
         val settings = SpbSettings.getInstance()
         settings.vsTelemetrySessionValue = vsTelemetrySessionField?.text ?: "SPB"
-        settings.downloadPath = downloadPathField?.text ?: System.getProperty("user.home") + "/spb-tools"
-        settings.updateCheckUrl = updateCheckUrlField?.text ?: ""
+        settings.cliUpdateUrl = cliUpdateUrlField?.text ?: ""
+        settings.cliDownloadPath = cliDownloadPathField?.text ?: "D:\\superbuilder\\new_tracker.exe"
         settings.enableAutoUpdateCheck = enableAutoUpdateCheckBox?.isSelected ?: true
     }
 
     override fun reset() {
         val settings = SpbSettings.getInstance()
         vsTelemetrySessionField?.text = settings.vsTelemetrySessionValue
-        downloadPathField?.text = settings.downloadPath
-        updateCheckUrlField?.text = settings.updateCheckUrl
+        cliUpdateUrlField?.text = settings.cliUpdateUrl
+        cliDownloadPathField?.text = settings.cliDownloadPath
         enableAutoUpdateCheckBox?.isSelected = settings.enableAutoUpdateCheck
     }
 
     override fun disposeUIResources() {
         mainPanel = null
         vsTelemetrySessionField = null
-        downloadPathField = null
-        updateCheckUrlField = null
+        cliUpdateUrlField = null
+        cliDownloadPathField = null
         enableAutoUpdateCheckBox = null
     }
 }

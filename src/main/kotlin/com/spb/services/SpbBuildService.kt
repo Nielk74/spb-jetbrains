@@ -16,7 +16,7 @@ import com.spb.settings.SpbSettings
 
 object SpbBuildService {
 
-    private const val VSTELEMETRY_SESSION_VAR = "VSTelemetrySession"
+    private const val VSTEL_BUILD_ID_VAR = "VSTEL_CurrentSolutionBuildID"
 
     fun buildWithVsTelemetry(project: Project, file: VirtualFile, isSolution: Boolean) {
         val settings = SpbSettings.getInstance()
@@ -44,8 +44,8 @@ object SpbBuildService {
         // Set the working directory to the file's parent
         commandLine.workDirectory = file.parent?.let { java.io.File(it.path) }
 
-        // Set the VSTelemetrySession environment variable
-        commandLine.environment[VSTELEMETRY_SESSION_VAR] = settings.vsTelemetrySessionValue
+        // Set the VSTEL_CurrentSolutionBuildID environment variable
+        commandLine.environment[VSTEL_BUILD_ID_VAR] = settings.vsTelemetrySessionValue
 
         return commandLine
     }

@@ -6,9 +6,15 @@ import com.intellij.notification.NotificationType
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.progress.ProgressIndicator
+import com.intellij.openapi.progress.ProgressManager
+import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.spb.settings.SpbSettings
 import java.io.File
+import java.io.FileOutputStream
+import java.net.HttpURLConnection
+import java.net.URL
 import java.util.concurrent.TimeUnit
 
 @Service
@@ -17,8 +23,7 @@ class VersionCheckService {
     private val logger = Logger.getInstance(VersionCheckService::class.java)
 
     companion object {
-        private val CHECK_INTERVAL_MS = TimeUnit.DAYS.toMillis(1) // Once per day
-        private const val CURRENT_VERSION = "1.0.0"
+        private val CHECK_INTERVAL_MS = TimeUnit.DAYS.toMillis(1)
 
         fun getInstance(): VersionCheckService {
             return ApplicationManager.getApplication().getService(VersionCheckService::class.java)
@@ -47,81 +52,52 @@ class VersionCheckService {
 
     private fun performUpdateCheck(project: Project?, settings: SpbSettings) {
         try {
-            val latestVersion = fetchLatestVersion(settings.updateCheckUrl)
+            val remoteLastModified = fetchLastModified(settings.cliUpdateUrl)
 
-            if (latestVersion != null && isNewerVersion(latestVersion, CURRENT_VERSION)) {
+            if (remoteLastModified != null && remoteLastModified > settings.lastCliModified) {
                 ApplicationManager.getApplication().invokeLater {
-                    showUpdateNotification(project, latestVersion, settings.downloadPath)
+                    showUpdateNotification(project, remoteLastModified, settings)
                 }
+            } else {
+                logger.info("CLI tool is up to date (remote: $remoteLastModified, local: ${settings.lastCliModified})")
             }
         } catch (e: Exception) {
-            logger.warn("Failed to check for updates", e)
+            logger.warn("Failed to check for CLI updates", e)
         }
     }
 
-    /**
-     * TODO: Implement actual HTTP fetch to get version info from the configured URL.
-     *
-     * Expected response format (JSON):
-     * {
-     *   "version": "1.2.0",
-     *   "downloadUrl": "http://example.com/spb/spb-tool-1.2.0.exe",
-     *   "releaseNotes": "Bug fixes and improvements"
-     * }
-     *
-     * Mock implementation returns a simulated new version for testing.
-     */
-    private fun fetchLatestVersion(updateCheckUrl: String): String? {
-        // TODO: Replace with actual HTTP request implementation
-        // Example implementation:
-        // val connection = URL(updateCheckUrl).openConnection() as HttpURLConnection
-        // connection.requestMethod = "GET"
-        // connection.connectTimeout = 5000
-        // connection.readTimeout = 5000
-        //
-        // if (connection.responseCode == 200) {
-        //     val response = connection.inputStream.bufferedReader().readText()
-        //     val json = JsonParser.parseString(response).asJsonObject
-        //     return json.get("version").asString
-        // }
-        // return null
+    private fun fetchLastModified(url: String): Long? {
+        val connection = URL(url).openConnection() as HttpURLConnection
+        try {
+            connection.requestMethod = "HEAD"
+            connection.connectTimeout = 5000
+            connection.readTimeout = 5000
 
-        // Mock: Return a "new version" for demonstration
-        // In production, this should fetch from updateCheckUrl
-        logger.info("Mock version check - would fetch from: $updateCheckUrl")
-
-        // For testing: uncomment the line below to simulate a new version available
-        // return "1.1.0"
-
-        return null // No update available (default mock behavior)
-    }
-
-    private fun isNewerVersion(latest: String, current: String): Boolean {
-        val latestParts = latest.split(".").map { it.toIntOrNull() ?: 0 }
-        val currentParts = current.split(".").map { it.toIntOrNull() ?: 0 }
-
-        for (i in 0 until maxOf(latestParts.size, currentParts.size)) {
-            val latestPart = latestParts.getOrElse(i) { 0 }
-            val currentPart = currentParts.getOrElse(i) { 0 }
-
-            if (latestPart > currentPart) return true
-            if (latestPart < currentPart) return false
+            val responseCode = connection.responseCode
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                val lastModified = connection.lastModified
+                logger.info("Remote Last-Modified: $lastModified for $url")
+                return if (lastModified > 0) lastModified else null
+            } else {
+                logger.warn("HTTP $responseCode when checking $url")
+                return null
+            }
+        } finally {
+            connection.disconnect()
         }
-
-        return false
     }
 
-    private fun showUpdateNotification(project: Project?, latestVersion: String, downloadPath: String) {
+    private fun showUpdateNotification(project: Project?, remoteLastModified: Long, settings: SpbSettings) {
         val notification = NotificationGroupManager.getInstance()
             .getNotificationGroup("SPB Build Notifications")
             .createNotification(
-                "SPB Tool Update Available",
-                "A new version ($latestVersion) is available. Current version: $CURRENT_VERSION",
+                "SPB CLI Update Available",
+                "A new version of the CLI tool (tracker.exe) is available. Would you like to download it?",
                 NotificationType.INFORMATION
             )
 
         notification.addAction(NotificationAction.createSimple("Download Update") {
-            downloadUpdate(project, latestVersion, downloadPath)
+            downloadUpdate(project, remoteLastModified, settings)
             notification.expire()
         })
 
@@ -132,59 +108,79 @@ class VersionCheckService {
         notification.notify(project)
     }
 
-    /**
-     * TODO: Implement actual download of the exe file.
-     *
-     * This should:
-     * 1. Fetch the download URL from the version info endpoint
-     * 2. Download the file to the configured downloadPath
-     * 3. Show progress indicator during download
-     * 4. Verify the download (checksum if available)
-     * 5. Notify user when complete
-     */
-    private fun downloadUpdate(project: Project?, version: String, downloadPath: String) {
-        // TODO: Implement actual download logic
-        // Example implementation:
-        // val downloadUrl = "http://example.com/spb/spb-tool-$version.exe"
-        // val targetFile = File(downloadPath, "spb-tool-$version.exe")
-        //
-        // ProgressManager.getInstance().run(object : Task.Backgroundable(project, "Downloading SPB Tool Update") {
-        //     override fun run(indicator: ProgressIndicator) {
-        //         indicator.isIndeterminate = false
-        //         val connection = URL(downloadUrl).openConnection() as HttpURLConnection
-        //         val totalSize = connection.contentLength
-        //         var downloadedSize = 0
-        //
-        //         connection.inputStream.use { input ->
-        //             FileOutputStream(targetFile).use { output ->
-        //                 val buffer = ByteArray(8192)
-        //                 var bytesRead: Int
-        //                 while (input.read(buffer).also { bytesRead = it } != -1) {
-        //                     output.write(buffer, 0, bytesRead)
-        //                     downloadedSize += bytesRead
-        //                     indicator.fraction = downloadedSize.toDouble() / totalSize
-        //                 }
-        //             }
-        //         }
-        //     }
-        //
-        //     override fun onSuccess() {
-        //         notifyDownloadComplete(project, targetFile.path)
-        //     }
-        // })
+    private fun downloadUpdate(project: Project?, remoteLastModified: Long, settings: SpbSettings) {
+        ProgressManager.getInstance().run(object : Task.Backgroundable(project, "Downloading SPB CLI Update") {
+            override fun run(indicator: ProgressIndicator) {
+                indicator.isIndeterminate = false
+                indicator.text = "Downloading tracker.exe..."
 
-        // Mock: Just create the directory and show a notification
-        val downloadDir = File(downloadPath)
-        if (!downloadDir.exists()) {
-            downloadDir.mkdirs()
-        }
+                try {
+                    val connection = URL(settings.cliUpdateUrl).openConnection() as HttpURLConnection
+                    connection.connectTimeout = 10000
+                    connection.readTimeout = 30000
 
+                    if (connection.responseCode != HttpURLConnection.HTTP_OK) {
+                        throw Exception("HTTP ${connection.responseCode}")
+                    }
+
+                    val totalSize = connection.contentLength
+                    var downloadedSize = 0
+
+                    val targetFile = File(settings.cliDownloadPath)
+                    targetFile.parentFile?.mkdirs()
+
+                    connection.inputStream.use { input ->
+                        FileOutputStream(targetFile).use { output ->
+                            val buffer = ByteArray(8192)
+                            var bytesRead: Int
+                            while (input.read(buffer).also { bytesRead = it } != -1) {
+                                if (indicator.isCanceled) {
+                                    throw InterruptedException("Download cancelled")
+                                }
+                                output.write(buffer, 0, bytesRead)
+                                downloadedSize += bytesRead
+                                if (totalSize > 0) {
+                                    indicator.fraction = downloadedSize.toDouble() / totalSize
+                                }
+                            }
+                        }
+                    }
+
+                    settings.lastCliModified = remoteLastModified
+
+                    ApplicationManager.getApplication().invokeLater {
+                        notifyDownloadComplete(project, targetFile.path)
+                    }
+                } catch (e: InterruptedException) {
+                    logger.info("Download cancelled by user")
+                } catch (e: Exception) {
+                    logger.error("Failed to download CLI update", e)
+                    ApplicationManager.getApplication().invokeLater {
+                        notifyDownloadFailed(project, e.message ?: "Unknown error")
+                    }
+                }
+            }
+        })
+    }
+
+    private fun notifyDownloadComplete(project: Project?, path: String) {
         NotificationGroupManager.getInstance()
             .getNotificationGroup("SPB Build Notifications")
             .createNotification(
-                "Download Started (Mock)",
-                "In production, version $version would be downloaded to: $downloadPath",
+                "Download Complete",
+                "CLI tool downloaded to: $path",
                 NotificationType.INFORMATION
+            )
+            .notify(project)
+    }
+
+    private fun notifyDownloadFailed(project: Project?, error: String) {
+        NotificationGroupManager.getInstance()
+            .getNotificationGroup("SPB Build Notifications")
+            .createNotification(
+                "Download Failed",
+                "Failed to download CLI update: $error",
+                NotificationType.ERROR
             )
             .notify(project)
     }

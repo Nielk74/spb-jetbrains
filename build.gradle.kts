@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.spb"
-version = "1.0.0"
+version = "1.1.0"
 
 repositories {
     mavenCentral()
@@ -27,7 +27,7 @@ kotlin {
 tasks {
     patchPluginXml {
         sinceBuild.set("242")
-        untilBuild.set("251.*")
+        untilBuild.set("252.*")
     }
 
     signPlugin {
