@@ -1,20 +1,21 @@
 <idea-plugin>
     <id>com.spb.spb-jetbrains</id>
     <name>SPB Build</name>
-    <version>1.1.0</version>
+    <version>1.2.0</version>
     <vendor email="support@example.com" url="https://example.com">SPB</vendor>
 
     <description><![CDATA[
-    Provides custom MSBuild integration with Visual Studio telemetry session variable support.
+    Provides Superbuilding - triggers native IDE build with VSTEL_CurrentSolutionBuildID environment variable.
     <ul>
-        <li>Build projects/solutions with VSTelemetrySession environment variable</li>
-        <li>Right-click context menu integration</li>
-        <li>Automatic update checking for external tools</li>
+        <li>Superbuild with custom environment variable for build tracking</li>
+        <li>Right-click context menu integration with hammer icon</li>
+        <li>Automatic CLI tool update checking</li>
     </ul>
     ]]></description>
 
     <change-notes><![CDATA[
     <ul>
+        <li>1.2.0 - Renamed to "Superbuilding" with hammer icon, use native IDE build API</li>
         <li>1.1.0 - Use VSTEL_CurrentSolutionBuildID env var, CLI update via HTTP Last-Modified, support IDE 252.*</li>
         <li>1.0.0 - Initial release</li>
     </ul>
@@ -51,27 +52,22 @@
     </extensions>
 
     <actions>
-        <!-- Project context menu -->
-        <action id="com.spb.actions.SpbBuildProjectAction"
-                class="com.spb.actions.SpbBuildProjectAction"
-                text="SPB Build Project"
-                description="Build project with VSTelemetrySession variable">
+        <!-- Superbuild action in context menu -->
+        <action id="com.spb.actions.SuperbuildSolutionAction"
+                class="com.spb.actions.SuperbuildSolutionAction"
+                text="Superbuilding"
+                description="Build with VSTEL_CurrentSolutionBuildID variable"
+                icon="/icons/superbuild.svg">
             <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="BuildMenu"/>
         </action>
 
-        <!-- Solution context menu -->
-        <action id="com.spb.actions.SpbBuildSolutionAction"
-                class="com.spb.actions.SpbBuildSolutionAction"
-                text="SPB Build Solution"
-                description="Build solution with VSTelemetrySession variable">
-            <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="com.spb.actions.SpbBuildProjectAction"/>
-        </action>
-
         <!-- Build menu integration -->
-        <group id="com.spb.actions.SpbBuildMenu" text="SPB Build" popup="true">
-            <reference ref="com.spb.actions.SpbBuildProjectAction"/>
-            <reference ref="com.spb.actions.SpbBuildSolutionAction"/>
+        <action id="com.spb.actions.SuperbuildProjectAction"
+                class="com.spb.actions.SuperbuildProjectAction"
+                text="Superbuilding"
+                description="Build project with VSTEL_CurrentSolutionBuildID variable"
+                icon="/icons/superbuild.svg">
             <add-to-group group-id="BuildMenu" anchor="last"/>
-        </group>
+        </action>
     </actions>
 </idea-plugin>
