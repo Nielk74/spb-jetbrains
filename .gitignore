@@ -2,6 +2,9 @@
 .gradle/
 build/
 out/
+gradlew
+gradlew.bat
+gradle/wrapper/
 
 # IntelliJ Platform
 .intellijPlatform/
