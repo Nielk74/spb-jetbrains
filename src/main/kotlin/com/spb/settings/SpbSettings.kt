@@ -12,9 +12,8 @@ import com.intellij.util.xmlb.XmlSerializerUtil
 )
 class SpbSettings : PersistentStateComponent<SpbSettings> {
 
-    var vsTelemetrySessionValue: String = "SPB"
     var cliUpdateUrl: String = "http://winsuperbuilder.dev.echonet:15000/resources/tracker.exe.custom"
-    var cliDownloadPath: String = "D:\\superbuilder\\new_tracker.exe"
+    var cliDownloadPath: String = "D:\\superbuilder\\tracker.exe"
     var lastCliModified: Long = 0
     var lastUpdateCheck: Long = 0
     var enableAutoUpdateCheck: Boolean = true

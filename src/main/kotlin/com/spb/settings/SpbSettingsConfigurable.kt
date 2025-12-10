@@ -13,7 +13,6 @@ import javax.swing.JPanel
 class SpbSettingsConfigurable : Configurable {
 
     private var mainPanel: JPanel? = null
-    private var vsTelemetrySessionField: JBTextField? = null
     private var cliUpdateUrlField: JBTextField? = null
     private var cliDownloadPathField: TextFieldWithBrowseButton? = null
     private var enableAutoUpdateCheckBox: JBCheckBox? = null
@@ -21,7 +20,6 @@ class SpbSettingsConfigurable : Configurable {
     override fun getDisplayName(): String = "SPB Build"
 
     override fun createComponent(): JComponent {
-        vsTelemetrySessionField = JBTextField()
         cliUpdateUrlField = JBTextField()
         cliDownloadPathField = TextFieldWithBrowseButton().apply {
             addBrowseFolderListener(
@@ -34,8 +32,6 @@ class SpbSettingsConfigurable : Configurable {
         enableAutoUpdateCheckBox = JBCheckBox("Enable automatic update checks (once per day)")
 
         mainPanel = FormBuilder.createFormBuilder()
-            .addLabeledComponent(JBLabel("VSTEL_CurrentSolutionBuildID value:"), vsTelemetrySessionField!!, 1, false)
-            .addSeparator()
             .addLabeledComponent(JBLabel("CLI update URL:"), cliUpdateUrlField!!, 1, false)
             .addLabeledComponent(JBLabel("CLI download path:"), cliDownloadPathField!!, 1, false)
             .addComponent(enableAutoUpdateCheckBox!!, 1)
@@ -47,23 +43,20 @@ class SpbSettingsConfigurable : Configurable {
 
     override fun isModified(): Boolean {
         val settings = SpbSettings.getInstance()
-        return vsTelemetrySessionField?.text != settings.vsTelemetrySessionValue ||
-                cliUpdateUrlField?.text != settings.cliUpdateUrl ||
+        return cliUpdateUrlField?.text != settings.cliUpdateUrl ||
                 cliDownloadPathField?.text != settings.cliDownloadPath ||
                 enableAutoUpdateCheckBox?.isSelected != settings.enableAutoUpdateCheck
     }
 
     override fun apply() {
         val settings = SpbSettings.getInstance()
-        settings.vsTelemetrySessionValue = vsTelemetrySessionField?.text ?: "SPB"
         settings.cliUpdateUrl = cliUpdateUrlField?.text ?: ""
-        settings.cliDownloadPath = cliDownloadPathField?.text ?: "D:\\superbuilder\\new_tracker.exe"
+        settings.cliDownloadPath = cliDownloadPathField?.text ?: "D:\\superbuilder\\tracker.exe"
         settings.enableAutoUpdateCheck = enableAutoUpdateCheckBox?.isSelected ?: true
     }
 
     override fun reset() {
         val settings = SpbSettings.getInstance()
-        vsTelemetrySessionField?.text = settings.vsTelemetrySessionValue
         cliUpdateUrlField?.text = settings.cliUpdateUrl
         cliDownloadPathField?.text = settings.cliDownloadPath
         enableAutoUpdateCheckBox?.isSelected = settings.enableAutoUpdateCheck
@@ -71,7 +64,6 @@ class SpbSettingsConfigurable : Configurable {
 
     override fun disposeUIResources() {
         mainPanel = null
-        vsTelemetrySessionField = null
         cliUpdateUrlField = null
         cliDownloadPathField = null
         enableAutoUpdateCheckBox = null

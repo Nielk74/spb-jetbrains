@@ -9,7 +9,7 @@ import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.actionSystem.Presentation
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.SystemInfo
-import com.spb.settings.SpbSettings
+import java.util.UUID
 
 object SpbBuildService {
 
@@ -20,13 +20,14 @@ object SpbBuildService {
     private const val BUILD_CURRENT_PROJECT_ACTION = "BuildCurrentProject"
 
     fun triggerBuildWithEnvVar(project: Project, dataContext: DataContext, isSolution: Boolean) {
-        val settings = SpbSettings.getInstance()
+        // Generate a random build ID for each superbuild
+        val randomBuildId = UUID.randomUUID().toString()
 
         // Set the environment variable for the current process
         // This will be inherited by the build process
-        setEnvironmentVariable(VSTEL_BUILD_ID_VAR, settings.vsTelemetrySessionValue)
+        setEnvironmentVariable(VSTEL_BUILD_ID_VAR, randomBuildId)
 
-        notifyInfo(project, "Superbuilding with $VSTEL_BUILD_ID_VAR=${settings.vsTelemetrySessionValue}")
+        notifyInfo(project, "Superbuilding with $VSTEL_BUILD_ID_VAR=$randomBuildId")
 
         // Trigger the native build action
         val actionId = if (isSolution) BUILD_SOLUTION_ACTION else BUILD_CURRENT_PROJECT_ACTION
