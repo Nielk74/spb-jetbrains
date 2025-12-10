@@ -4,32 +4,56 @@ import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.actionSystem.Presentation
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.SystemInfo
+import java.io.File
 import java.util.UUID
 
 object SpbBuildService {
 
-    private const val VSTEL_BUILD_ID_VAR = "VSTEL_CurrentSolutionBuildID"
+    private const val SPB_ACTIVE_FILE = "spb_active"
 
     // Rider's build action IDs
     private const val BUILD_SOLUTION_ACTION = "BuildSolutionAction"
     private const val BUILD_CURRENT_PROJECT_ACTION = "BuildCurrentProject"
 
     fun triggerBuildWithEnvVar(project: Project, dataContext: DataContext, isSolution: Boolean) {
-        // Generate a random build ID for each superbuild
+        // Get solution directory from the project's base path
+        val solutionDir = project.basePath
+
+        if (solutionDir == null) {
+            notifyError(project, "Could not determine solution directory")
+            return
+        }
+
+        val spbActiveFile = File(solutionDir, SPB_ACTIVE_FILE)
+
+        // Check if spb_active file exists - if not, this solution doesn't use superbuild
+        if (!spbActiveFile.exists()) {
+            notifyInfo(project, "No $SPB_ACTIVE_FILE file found - running normal build")
+            triggerNativeBuild(project, dataContext, isSolution)
+            return
+        }
+
+        // Generate a random build ID
         val randomBuildId = UUID.randomUUID().toString()
 
-        // Set the environment variable for the current process
-        // This will be inherited by the build process
-        setEnvironmentVariable(VSTEL_BUILD_ID_VAR, randomBuildId)
+        // Write the build ID into spb_active file
+        try {
+            spbActiveFile.writeText(randomBuildId)
+        } catch (e: Exception) {
+            notifyError(project, "Failed to write build ID to $SPB_ACTIVE_FILE: ${e.message}")
+            return
+        }
 
-        notifyInfo(project, "Superbuilding with $VSTEL_BUILD_ID_VAR=$randomBuildId")
+        notifyInfo(project, "Superbuilding with ID: $randomBuildId")
 
-        // Trigger the native build action
+        // Trigger the native build
+        triggerNativeBuild(project, dataContext, isSolution)
+    }
+
+    private fun triggerNativeBuild(project: Project, dataContext: DataContext, isSolution: Boolean) {
         val actionId = if (isSolution) BUILD_SOLUTION_ACTION else BUILD_CURRENT_PROJECT_ACTION
         val action = ActionManager.getInstance().getAction(actionId)
 
@@ -55,21 +79,6 @@ object SpbBuildService {
             } else {
                 notifyError(project, "Could not find build action")
             }
-        }
-    }
-
-    private fun setEnvironmentVariable(name: String, value: String) {
-        try {
-            // Use reflection to modify the environment (works for current process)
-            val env = System.getenv()
-            val field = env.javaClass.getDeclaredField("m")
-            field.isAccessible = true
-            @Suppress("UNCHECKED_CAST")
-            val writableEnv = field.get(env) as MutableMap<String, String>
-            writableEnv[name] = value
-        } catch (e: Exception) {
-            // Fallback: set as system property (less ideal but works)
-            System.setProperty(name, value)
         }
     }
 

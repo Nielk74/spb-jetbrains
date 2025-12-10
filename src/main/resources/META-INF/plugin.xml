@@ -1,13 +1,13 @@
 <idea-plugin>
     <id>com.spb.spb-jetbrains</id>
     <name>SPB Build</name>
-    <version>1.3.0</version>
+    <version>1.5.0</version>
     <vendor email="support@example.com" url="https://example.com">SPB</vendor>
 
     <description><![CDATA[
-    Provides Superbuilding - triggers native IDE build with VSTEL_CurrentSolutionBuildID environment variable.
+    Provides Superbuilding - triggers native IDE build with build ID written to spb_active file.
     <ul>
-        <li>Superbuild with custom environment variable for build tracking</li>
+        <li>Superbuild writes unique build ID to spb_active file for MSBuild to read</li>
         <li>Right-click context menu integration with hammer icon</li>
         <li>Automatic CLI tool update checking</li>
     </ul>
@@ -15,6 +15,8 @@
 
     <change-notes><![CDATA[
     <ul>
+        <li>1.5.0 - Write build ID to spb_active file (readable by MSBuild via ReadLinesFromFile)</li>
+        <li>1.4.0 - Random build ID, remove unused setting, fix download path</li>
         <li>1.3.0 - Context menu action now appears at top, redesigned hammer icon</li>
         <li>1.2.0 - Renamed to "Superbuilding" with hammer icon, use native IDE build API</li>
         <li>1.1.0 - Use VSTEL_CurrentSolutionBuildID env var, CLI update via HTTP Last-Modified, support IDE 252.*</li>
@@ -57,16 +59,16 @@
         <action id="com.spb.actions.SuperbuildSolutionAction"
                 class="com.spb.actions.SuperbuildSolutionAction"
                 text="Superbuilding"
-                description="Build with VSTEL_CurrentSolutionBuildID variable"
+                description="Build with unique ID written to spb_active file"
                 icon="/icons/superbuild.svg">
-            <add-to-group group-id="ProjectViewPopupMenu" anchor="first"/>
+            <add-to-group group-id="SolutionExplorerPopupMenu" anchor="first"/>
         </action>
 
         <!-- Build menu integration -->
         <action id="com.spb.actions.SuperbuildProjectAction"
                 class="com.spb.actions.SuperbuildProjectAction"
                 text="Superbuilding"
-                description="Build project with VSTEL_CurrentSolutionBuildID variable"
+                description="Build project with unique ID written to spb_active file"
                 icon="/icons/superbuild.svg">
             <add-to-group group-id="BuildMenu" anchor="last"/>
         </action>
